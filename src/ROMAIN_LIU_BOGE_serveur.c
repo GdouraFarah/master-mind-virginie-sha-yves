@@ -46,26 +46,27 @@ void fils(int fd_client, int* tube_pub){
 	char* role;
 	char* role_adv;
 	
-	
 	// recuperation du pseudo
-	lc = recvfrom (fd_client, pseudo, 15, 0, &adr_src, &lg_adr_cli);
-	pseudo[lc] = '\0';
+	lc = read (fd_client, pseudo, strlen(pseudo));	
+	pseudo[lc] = '\0';		
 	
+	printf("joueur= %s\n",pseudo);
 	// reception du mode de jeu
-	lc = recvfrom (fd_client, message, 50, 0, &adr_src, &lg_adr_cli);
+	lc = read (fd_client,message, strlen(message));	
 	message[lc] = '\0';
 	
-	// prise en comptede la demande de fermeture
+	// prise en compte de la demande de fermeture
 	if (strcmp(message,"exit") == 0)
 		exit(0);
 	
 	// jeu solo
-	else if (strcmp(message,"solo") == 0)
+	else if (strcmp(message,"solo") == 0){
 		ia(fd_client);
-	
+		printf("message recu== solo\n");
+	}
 	// jeu en duel
 	else if (strcmp(message,"duel") == 0) {
-	
+		printf("message recu== duel\n");
 		// on regarde s'il y a un joueur de disponible
 		if (read(tube_pub[0], message, 50) == 0) {	// aucun joueur disponible
 			// on cree un tube prive
@@ -173,7 +174,7 @@ int main(int argc, char *argv[])
 	
 	// lancement du serveur
 	if (listen(sock,10) == -1) {
-		perror("Impossible d'écouter sur ce port");
+		perror("Impossible d'écouter sur ce port\n");
 		exit(-4);
 	}
 	printf("serveur en ecoute\n");
@@ -182,24 +183,31 @@ int main(int argc, char *argv[])
 	if (pipe(tube) != 0) {
 		perror("pipe");
 		exit(-5);
+
 	}
+	bool test=true;
 	
 	// programme d'ecoute du serveur
 	while(1){
 		// Connexion d'un client
-	    if ( (fd_client = accept(sock, &addr_client, &lg_adresse_client)) ) {
-	    	// Creation d'un fils pour s'occuper du client
+		 fd_client = accept(sock, (struct sockaddr *) &addr_client, &lg_adresse_client); 
+		 if ( fd_client != -1) {    	
+			// Creation d'un fils pour s'occuper du client
 			int pid = fork();
-			if (pid == 0)	// il s'agit du fils
+			if (pid == 0){	// il s'agit du fils					
 				fils(fd_client, tube);
-			else if (pid == -1)	// le fils n'a pas pu etre cree
-				perror("impossible de prendre en charge ce client");
+			}else if (pid == -1){	// le fils n'a pas pu etre cree
+				perror("impossible de prendre en charge ce client\n");
+			}
+		}else{
+			printf("erreur connexion avec le client...\n");
 		}
 	}
 	
 	// attente de la fin des fils
 	while (wait(0) != -1);
 	
+
 	// fermeture du socket
 	close(sock);
 	
