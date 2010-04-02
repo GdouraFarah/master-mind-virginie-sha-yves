@@ -110,7 +110,7 @@ int main (int argc, char** argv){
 		if ((strcmp(message_client,"duel") != 0)&&(strcmp(message_client,"solitaire") != 0)&&(strcmp(message_client,"quit") != 0)) {
 		    printf("> erreur de saisie\n");
 		}
-	
+		
 		if (strcmp(message_client,"solitaire") == 0){
 			write(sock, message_client, sizeof(message_client));			
 			ia(sock);
@@ -118,7 +118,7 @@ int main (int argc, char** argv){
 
 		if (strcmp(message_client,"duel") == 0){
 		}
-	
+		
     }
 
 close(sock);
