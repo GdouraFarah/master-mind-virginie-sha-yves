@@ -10,11 +10,15 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <regex.h>
+#include <fcntl.h>
 #include <time.h>
+
 
 
 #define TAILLE_MAX_DONNEES  1024
 #define CHAINE_MAX 100
+
+
 
 // le client joue contre le serveur
 int ia(int fd_client){
@@ -34,22 +38,22 @@ int ia(int fd_client){
 		srand(i*time(NULL));
 		combinaison[i]=rand()%10;
 		printf(" %d ",combinaison[i]);
-	}	
+	}       
 	printf("\n");
 
-	//	le client essaie de deviner le code genere
+	//      le client essaie de deviner le code genere
 	while ((tours_restants > 0) && (! quitter)){
 		verification = 0;
-		
+
 		// on attend l'essaie du client
 		lc = read(fd_client,tentative,sizeof(tentative));
-		
-		// verification de la tentative du client		
+
+		// verification de la tentative du client               
 		for(i=0;i<5;i++){
 			trouve = false;
 			if(combinaison[i]==tentative[i]){
 				reponse_tentative[i]='R';
-				verification++;	
+				verification++; 
 			}
 			else {
 				j=0;
@@ -65,7 +69,7 @@ int ia(int fd_client){
 				}
 			}
 		}
-	
+
 		if(verification == 5){
 			quitter = true;
 		}
@@ -79,6 +83,7 @@ int ia(int fd_client){
 	return EXIT_SUCCESS;
 }
 
+
 // procedure de jeu contre un autre joueur
 int duel(int fd_client, char* adversaire, int* tube, char* role){
 	
@@ -88,7 +93,6 @@ int duel(int fd_client, char* adversaire, int* tube, char* role){
 	char* message = malloc(CHAINE_MAX*sizeof(char));
 	regex_t regex_essai;
 	regex_t regex_notation;
-	
 	
 		
 	// on prepare la regex de control du format
@@ -244,7 +248,7 @@ void fils(int fd_client, int* tube_pub){
 	int tube_priv[2];
 	struct sockaddr adr_src;
 	socklen_t lg_adr_cli;
-	
+
 	char message[CHAINE_MAX];
 	char pseudo_adv[15];
 	char pseudo[50];
@@ -252,18 +256,20 @@ void fils(int fd_client, int* tube_pub){
 	char* role;
 	char* role_adv;
 	
-
 	// recuperation du pseudo
 	lc = read (fd_client, pseudo, 15);	
 	pseudo[lc] = '\0';		
-	char bienvenue[60] = {'B','i','e','n','v','e','n','u','e',' '};
-	strcat(bienvenue,pseudo);
+	
+	printf("joueur= %s\n",pseudo);
+	
+	char bienvenue[60];
+	sprintf(bienvenue, "Bienvenue %s", pseudo);
 	fflush(stdout);
-	write(fd_client, bienvenue, sizeof(bienvenue));	
-
+	
+	write(fd_client, bienvenue, sizeof(bienvenue)); 
 	// reception du mode de jeu
 	lc = read (fd_client,message, CHAINE_MAX);	
-	message[lc] = '\0';	
+	message[lc] = '\0';
 	
 	// prise en compte de la demande de fermeture
 	if (strcmp(message,"exit") == 0)
@@ -273,12 +279,24 @@ void fils(int fd_client, int* tube_pub){
 	else if (strcmp(message,"solitaire") == 0){
 		ia(fd_client);
 	}
-
 	// jeu en duel
 	else if (strcmp(message,"duel") == 0) {
 		printf("message recu== duel\n");
+		
+		/* on rend le tube public non bloquant en lecture
+		int mode;
+		mode = fcntl(tube_pub[0], F_GETFL, 0);
+		mode |= O_NONBLOCK;
+		fcntl(tube_pub[0], F_SETFL, mode);*/
+		
+		// On met une chaine vide dans le tube pour etre sur de recuperer qq chose
+		write(tube_pub[1], " ", 1);
+		
 		// on regarde s'il y a un joueur de disponible
-		if (read(tube_pub[0], message, CHAINE_MAX) == 0) {	// aucun joueur disponible
+		read(tube_pub[0], message, CHAINE_MAX);
+			printf("test");
+		if (strcmp(message, " ") == 0) {	// aucun joueur disponible
+			printf("aucun joueur dispo");
 			// on cree un tube prive
 			if (pipe(tube_priv) != 0) {
 				perror("pipe");
@@ -310,6 +328,7 @@ void fils(int fd_client, int* tube_pub){
 			
 			// on lui envoie notre pseudo en echange, puis son role
 			write(tube_priv[1], pseudo, strlen(pseudo));
+			sleep(1);
 			write(tube_priv[1], role_adv, strlen(role_adv));
 			
 			// on lance le programme de jeu
@@ -318,6 +337,7 @@ void fils(int fd_client, int* tube_pub){
 		
 		// il y a un joueur disponible
 		else {
+			printf("il y a un joueur dispo");
 			// on recupere le no du tube prive
 			tube_priv[0] = atoi(strtok(message, "-"));
 			tube_priv[1] = atoi(strtok(NULL, "-"));
@@ -393,18 +413,17 @@ int main(int argc, char *argv[])
 	if (pipe(tube) != 0) {
 		perror("pipe");
 		exit(-5);
-
 	}
 	
 	// programme d'ecoute du serveur
 	while(1){
 		// Connexion d'un client
-		fd_client = accept(sock, (struct sockaddr *) &addr_client, &lg_adresse_client); 
+		 fd_client = accept(sock, (struct sockaddr *) &addr_client, &lg_adresse_client); 
 		 if ( fd_client != -1) {    	
 			// Creation d'un fils pour s'occuper du client
 			int pid = fork();
-			if (pid == 0){	// il s'agit du fils	
-				printf("connexion avec le client établie..\n");				
+			if (pid == 0){	// il s'agit du fils
+				printf("connexion avec le client établie..\n");
 				fils(fd_client, tube);
 			}
 			if (pid == -1){	// le fils n'a pas pu etre cree
@@ -421,8 +440,6 @@ int main(int argc, char *argv[])
 
 	// fermeture du socket
 	close(sock);
-	close(fd_client);
-	
 	
 	return 0;
 }
