@@ -9,23 +9,46 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <regex.h>
 
 // le client joue contre le serveur
 int ia(int fd_client){
 	char message[50];
 	int combinaison[5];
-	int lc,i,resultat,tours_restants;
+	char resultat[50];
+	int lc,i,tours_restants;
 	char succes[6]={'R','R','R','R','R','\0'};
 	int control = 0;
+	regex_t regex_essai;
 
 	// on envoie au serveur la combinaison
 	do{
 		// on demande au client sa tentative de combinaison
 		printf("client> combinaison?\n");
-		for(i=0;i<5;i++){
+		scanf(%s,resultat);
+		
+		// on prepare la regex de control du format
+		if (regcomp (&regex_essai, "^[0-9]{5}$", REG_NOSUB) == 0) 
+		{
+			// format correct
+			if (regexec(&regex_essai, resultat, 0, NULL, 0) == 0) {
+				for(int i=0;i<5;i++)  
+				{  
+					combinaison[i] = atoi(resultat[i]);  
+				}   
+			}
+			else {
+					printf("erreur de format du message : le code doit être une suite de 5 chiffres.");
+			}
+		}
+		else {
+			printf("erreur lors de la création de la regex de control des essais");
+		}
+		
+		/*for(i=0;i<5;i++){
 			scanf("%d",&resultat);
 			combinaison[i] = resultat;
-		}
+		}*/
 		write(fd_client,combinaison,sizeof(combinaison));
 
 		// on attend la reponse du serveur
