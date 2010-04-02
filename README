@@ -1,0 +1,26 @@
+principe de rangement :
+	Le makefile associé à ce projet permet la séparation des fichiers en 3 dossiers :
+	- le dossier src contient les fichiers sources du projet,
+	- le dossier obj accueil les fichiers objet générés à la compilation,
+	- le dossier bin contiendra les executables construits à l'édition de liens.
+
+Compilation:
+	la compilation du projet complet peut se faire par un simple "make" dans le dossier racine du projet.
+	Il est également possible de compiler uniquement le serveur ou le client en utilisant les commande :
+	- "make serveur"
+	- "make client"
+	- "make clean" permet de nettoyer le repertoir du projet.
+
+Execution :
+	Afin de standardiser les noms des fichiers, nous avons nommer les executables de la même façon que les
+	fichiers sources en enlevant l'extention. Il est donc nécessaire de taper les commandes suivantes afin
+	de lancer respectivement le serveur et le client :
+	- "bin/ROMAIN_LIU_BOGE_serveur [no du port d'ecoute]"
+	- "bin/ROMAIN_LIU_BOGE_client [hôte] [no du port de connexion]"
+
+Avancement :
+	ayant été fortement retardé dans l'avancement de ce projet par le travail que nous avions par ailleur,
+	nous n'avons pu commencer le débuguage de l'appliation que ces derniers jours et nous sommes aperçu
+	ce soir seulement qu'il était impossible de lire et écrire dans le même tube depuis les un seul processus.
+	Nous avons donc été forcé d'abandonner la partie jeu en duel par manque de temps
+	(ils nous aurait fallut repenser entierement la méthode utilisé).

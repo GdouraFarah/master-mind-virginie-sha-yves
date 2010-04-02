@@ -27,6 +27,12 @@ endif
 all : $(REP_EXE)/$(EXEC)_client $(REP_EXE)/$(EXEC)_serveur
 	
 #
+client : $(REP_EXE)/$(EXEC)_client
+	
+#
+serveur : $(REP_EXE)/$(EXEC)_serveur
+	
+#
 # Regle principale
 #       
 #
@@ -47,5 +53,5 @@ $(SANS_HEADER) : $(REP_OBJ)/%.o : $(REP_SRC)/%.c
 	
 #
 clean:
-	rm -f $(REP_OBJ)/*.o $(REP_SRC)/*~ $(REP_EXE)/$(EXEC)_client $(REP_EXE)/$(EXEC)_serveur makefile~
+	rm -f $(REP_OBJ)/*.o $(REP_SRC)/*~ $(REP_EXE)/$(EXEC)_client $(REP_EXE)/$(EXEC)_serveur makefile~ README~
 #
