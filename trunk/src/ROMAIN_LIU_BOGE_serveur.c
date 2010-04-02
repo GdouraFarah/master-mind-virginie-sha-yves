@@ -89,8 +89,8 @@ int duel(int fd_client, char* adversaire, int* tube, char* role){
 	
 	int lc, tours_restant = 12;
 	bool termine = false;
-	char* chaine;
-	char* message = malloc(CHAINE_MAX*sizeof(char));
+	char chaine[CHAINE_MAX];
+	char message[CHAINE_MAX];
 	regex_t regex_essai;
 	regex_t regex_notation;
 	
@@ -156,7 +156,7 @@ int duel(int fd_client, char* adversaire, int* tube, char* role){
 	
 		// client devant proposer une combinaison
 		else {
-			char* combinaison = malloc(CHAINE_MAX*sizeof(char));
+			char combinaison[CHAINE_MAX];
 			
 			// on demande la combinaison
 			write(fd_client, "combinaison", 12);
@@ -250,11 +250,11 @@ void fils(int fd_client, int* tube_pub){
 	socklen_t lg_adr_cli;
 
 	char message[CHAINE_MAX];
-	char pseudo_adv[15];
-	char pseudo[50];
-	char* no_tel;
-	char* role;
-	char* role_adv;
+	char pseudo_adv[CHAINE_MAX];
+	char pseudo[CHAINE_MAX];
+	char no_tel[CHAINE_MAX];
+	char role[CHAINE_MAX];
+	char role_adv[CHAINE_MAX];
 	
 	// recuperation du pseudo
 	lc = read (fd_client, pseudo, 15);	
@@ -277,20 +277,23 @@ void fils(int fd_client, int* tube_pub){
 	
 	// jeu solo
 	else if (strcmp(message,"solitaire") == 0){
+		printf("mode de jeu en solitaire choisit par %s\n", pseudo);
 		ia(fd_client);
 	}
 	// jeu en duel
 	else if (strcmp(message,"duel") == 0) {
-		printf("message recu== duel\n");
+		printf("mode de jeu en duel choisit par %s\n", pseudo);
 		
-		/* on rend le tube public non bloquant en lecture
-		int mode;
-		mode = fcntl(tube_pub[0], F_GETFL, 0);
-		mode |= O_NONBLOCK;
-		fcntl(tube_pub[0], F_SETFL, mode);*/
+		/*
+		 * Il semblerait que les tubes soit bloque jusqu'à ce qu'un 
+		 * autre processus les ouvre dans le mode oppose ou qu'il ne
+		 * soit pas possible de les utilisé dans les deux sens pour le
+		 * meme processus. Nous ne disposont plus du temps necessaire
+		 * a un changement de solution et laissons de cote le jeu en reseau.
+		 */
 		
 		// On met une chaine vide dans le tube pour etre sur de recuperer qq chose
-		write(tube_pub[1], " ", 1);
+		write(tube_pub[1], " ", 2);printf("ecrit");
 		
 		// on regarde s'il y a un joueur de disponible
 		read(tube_pub[0], message, CHAINE_MAX);
@@ -349,7 +352,6 @@ void fils(int fd_client, int* tube_pub){
 			read(tube_priv[0], pseudo_adv, 15);
 			
 			// on recupere notre role
-			role = malloc(10*sizeof(char));
 			read(tube_priv[0], role, 10);
 			
 			// on lance le programme de jeu
