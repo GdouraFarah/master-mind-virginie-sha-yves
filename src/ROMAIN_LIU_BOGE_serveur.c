@@ -10,15 +10,72 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <regex.h>
-
+#include <time.h>
 
 
 #define TAILLE_MAX_DONNEES  1024
 #define CHAINE_MAX 100
 
-
-
+// le client joue contre le serveur
 int ia(int fd_client){
+	int tours_restants = 12;
+	int combinaison[5];
+	int i,lc,j;
+	bool quitter=false;
+	int tentative[5];
+	int verification = 0;
+	char reponse_tentative[6];
+	bool trouve;
+	int control; 
+
+	printf("combinaison a deviner par le client: ");
+	// initialisation de la combinaison a deviner
+	for(i=0;i < 5;i++){
+		srand(i*time(NULL));
+		combinaison[i]=rand()%10;
+		printf(" %d ",combinaison[i]);
+	}	
+	printf("\n");
+
+	//	le client essaie de deviner le code genere
+	while ((tours_restants > 0) && (! quitter)){
+		verification = 0;
+		
+		// on attend l'essaie du client
+		lc = read(fd_client,tentative,sizeof(tentative));
+		
+		// verification de la tentative du client		
+		for(i=0;i<5;i++){
+			trouve = false;
+			if(combinaison[i]==tentative[i]){
+				reponse_tentative[i]='R';
+				verification++;	
+			}
+			else {
+				j=0;
+				while ((j<5)&&(! trouve)){
+					if((tentative[i] == combinaison[j])&&(i != j)){
+						trouve = true;
+						reponse_tentative[i]='B';
+					} 
+					j++;
+				}
+				if (! trouve){
+					reponse_tentative[i]='V';
+				}
+			}
+		}
+	
+		if(verification == 5){
+			quitter = true;
+		}
+		tours_restants--;
+		reponse_tentative[5]='\0';
+		write(fd_client, reponse_tentative, sizeof(reponse_tentative));
+		read(fd_client,&control,sizeof(control));
+		write(fd_client,&tours_restants,sizeof(tours_restants));
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -188,32 +245,35 @@ void fils(int fd_client, int* tube_pub){
 	struct sockaddr adr_src;
 	socklen_t lg_adr_cli;
 	
-	char* message = malloc(CHAINE_MAX*sizeof(char));
-	//char* message_reponse = malloc(100*sizeof(char));
-	char* pseudo_adv = malloc(15*sizeof(char));
-	char* pseudo = malloc(15*sizeof(char));
+	char message[CHAINE_MAX];
+	char pseudo_adv[15];
+	char pseudo[50];
 	char* no_tel;
 	char* role;
 	char* role_adv;
 	
+
 	// recuperation du pseudo
 	lc = read (fd_client, pseudo, 15);	
 	pseudo[lc] = '\0';		
-	
-	printf("joueur= %s\n",pseudo);
+	char bienvenue[60] = {'B','i','e','n','v','e','n','u','e',' '};
+	strcat(bienvenue,pseudo);
+	fflush(stdout);
+	write(fd_client, bienvenue, sizeof(bienvenue));	
+
 	// reception du mode de jeu
 	lc = read (fd_client,message, CHAINE_MAX);	
-	message[lc] = '\0';
+	message[lc] = '\0';	
 	
 	// prise en compte de la demande de fermeture
 	if (strcmp(message,"exit") == 0)
 		exit(0);
 	
 	// jeu solo
-	else if (strcmp(message,"solo") == 0){
-		printf("message recu== solo\n");
+	else if (strcmp(message,"solitaire") == 0){
 		ia(fd_client);
 	}
+
 	// jeu en duel
 	else if (strcmp(message,"duel") == 0) {
 		printf("message recu== duel\n");
@@ -293,7 +353,7 @@ int main(int argc, char *argv[])
    
 	struct sockaddr_in adr;
 	struct sockaddr addr_client;
-	socklen_t lg_adresse_client;
+	socklen_t lg_adresse_client = sizeof(struct sockaddr_in);
 	struct hostent *hostinfo = NULL;
    
 	// vérification de la syntaxe de la commande
@@ -335,18 +395,19 @@ int main(int argc, char *argv[])
 		exit(-5);
 
 	}
-	bool test=true;
 	
 	// programme d'ecoute du serveur
 	while(1){
 		// Connexion d'un client
-		 fd_client = accept(sock, (struct sockaddr *) &addr_client, &lg_adresse_client); 
+		fd_client = accept(sock, (struct sockaddr *) &addr_client, &lg_adresse_client); 
 		 if ( fd_client != -1) {    	
 			// Creation d'un fils pour s'occuper du client
 			int pid = fork();
-			if (pid == 0){	// il s'agit du fils					
+			if (pid == 0){	// il s'agit du fils	
+				printf("connexion avec le client établie..\n");				
 				fils(fd_client, tube);
-			}else if (pid == -1){	// le fils n'a pas pu etre cree
+			}
+			if (pid == -1){	// le fils n'a pas pu etre cree
 				perror("impossible de prendre en charge ce client\n");
 			}
 		}else{
@@ -360,6 +421,8 @@ int main(int argc, char *argv[])
 
 	// fermeture du socket
 	close(sock);
+	close(fd_client);
+	
 	
 	return 0;
 }
